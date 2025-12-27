@@ -14,11 +14,16 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['logo.png', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
-        name: 'Vue Firebase Boilerplate',
-        short_name: 'VueBoiler',
-        description: 'A minimalist Vue 3 Boilerplate with Firebase Auth',
+        name: 'Octane',
+        short_name: 'Octane',
+        description: 'Octane - a Fuel & Mileage Tracker',
         theme_color: '#ffffff',
         icons: [
+          {
+            src: 'img/icons/pwa-192x192.png',
+            sizes: '192x192',
+            type: 'image/png',
+          },
           {
             src: 'img/icons/pwa-192x192.png',
             sizes: '192x192',
@@ -30,10 +35,13 @@ export default defineConfig({
             type: 'image/png',
           },
         ],
+        start_url: '.',
+        display: 'standalone',
+        background_color: '#ffffff',
       },
     }),
   ],
-  base: '/boiler/',
+  base: '/octane/',
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
