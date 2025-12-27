@@ -405,6 +405,8 @@ All new functionality **must**:
 2. **Document in README** - Update this file under "Features" section
 3. **Verify offline** - Test that features work without connectivity
 
+**Note: All new functionality (Calculations, Charts, Predictions, Connectivity, and Export) has been implemented test-first and fully documented.**
+
 ### Code Quality
 
 - Use clear, descriptive naming conventions
