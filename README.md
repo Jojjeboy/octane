@@ -185,7 +185,15 @@ npm run test:unit -- --watch
 users/{uid}/
   vehicle/
     data (document) - Single vehicle information
-  fuelLogs/{logId} (collection) - Fuel consumption logs
+  fuelLogs/{logId} (collection) - Fuel consumption logs (deprecated - use fuelEntries)
+  fuelEntries/{entryId} (collection) - Fuel fill-up entries
+    - id (string): Unique identifier
+    - date (string): ISO 8601 timestamp
+    - odometer (number): Odometer reading in km/miles
+    - fuelAmount (number): Fuel quantity in liters/gallons
+    - fuelPrice (number): Price per unit
+    - createdAt (timestamp): Creation timestamp
+    - updatedAt (timestamp): Last update timestamp
 ```
 
 ### Security Rules
@@ -235,6 +243,32 @@ The application uses **Firestore's persistent local cache** to ensure full offli
 - ✅ Real-time sync with Firebase
 - ✅ PWA installability
 - ✅ Single-vehicle architecture
+- ✅ **Fuel Entry Creation** - Add fuel fill-up records with validation
+
+### Fuel Entry Domain Model
+
+The `FuelEntry` represents a single fuel fill-up with the following fields:
+
+- **id** (string): Unique identifier
+- **date** (ISO 8601): Fill-up date and time
+- **odometer** (number): Odometer reading (must be positive)
+- **fuelAmount** (number): Fuel quantity (must be positive)
+- **fuelPrice** (number): Price per unit (must be positive)
+- **createdAt** (timestamp): When the entry was created
+- **updatedAt** (timestamp): Last modification time
+
+#### Validation Rules
+
+- Odometer, fuel amount, and price must be positive
+- Date cannot be in the future
+- All fields are required
+
+#### Offline Behavior
+
+- Fuel entries can be created while offline
+- Entries are stored locally immediately
+- Automatic sync to Firebase when connectivity is restored
+- No duplicates created during sync
 
 ### Upcoming Features
 

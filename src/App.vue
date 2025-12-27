@@ -7,12 +7,17 @@ import { watch } from 'vue'
 const authStore = useAuthStore()
 const vehicleStore = useVehicleStore()
 
+import { useFuelEntryStore } from '@/store/fuelEntry'
+const fuelEntryStore = useFuelEntryStore()
+
 // React to auth changes
 watch(() => authStore.user, (user) => {
   if (user) {
     vehicleStore.init()
+    fuelEntryStore.init()
   } else {
     vehicleStore.cleanup()
+    fuelEntryStore.cleanup()
   }
 }, { immediate: true })
 </script>

@@ -25,6 +25,7 @@ const handleLogout = async () => {
         <strong>{{ authStore.user?.email }}</strong>
       </p>
 
+      <button @click="router.push('/fuel-entries')" class="btn btn-primary">Fuel Entries</button>
       <button @click="handleLogout" class="btn btn-secondary">Logout</button>
     </div>
   </main>
