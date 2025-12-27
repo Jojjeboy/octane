@@ -2,18 +2,64 @@
 
 A Progressive Web App (PWA) for tracking fuel consumption and mileage, built with Vue 3, Vite, and Firebase.
 
-## Features
+## Purpose
 
-- **Offline-First**: Works fully offline with automatic sync when connectivity is restored
-- **Firebase Authentication**: Secure Google Sign-In
-- **Real-time Sync**: Automatic data synchronization across devices
-- **PWA**: Install as a native-like app on any device
+Octane is an offline-first PWA designed to help users track their vehicle's fuel consumption and mileage. The application emphasizes reliability, working seamlessly both online and offline with automatic data synchronization.
 
-## Firebase Configuration
+## Tech Stack
+
+- **Frontend**: Vue 3 (Composition API), TypeScript
+- **Build Tool**: Vite
+- **State Management**: Pinia
+- **Backend**: Firebase (Authentication, Firestore)
+- **PWA**: vite-plugin-pwa (Workbox)
+- **Testing**: Vitest, Vue Test Utils
+- **Linting**: ESLint, Prettier
+
+## Project Structure
+
+```
+octane/
+├── src/
+│   ├── components/      # Reusable Vue components
+│   ├── views/           # Page-level components
+│   ├── store/           # Pinia stores (auth, vehicle)
+│   ├── services/        # External services (Firebase)
+│   ├── utils/           # Utility functions
+│   ├── router/          # Vue Router configuration
+│   ├── assets/          # Static assets (CSS, images)
+│   ├── App.vue          # Root component
+│   └── main.ts          # Application entry point
+├── tests/               # Unit tests
+├── public/              # Public static assets
+└── dist/                # Production build output
+```
+
+## Installation
 
 ### Prerequisites
 
-Ensure the following environment variables are set (create a `.env` file):
+- Node.js (v20.19.0 or v22.12.0+)
+- npm or yarn
+- Firebase project with Authentication and Firestore enabled
+
+### Steps
+
+1. **Clone the repository**:
+
+```sh
+git clone https://github.com/Jojjeboy/octane.git
+cd octane
+```
+
+2. **Install dependencies**:
+
+```sh
+npm install
+```
+
+3. **Configure Firebase**:
+   Create a `.env` file in the project root:
 
 ```env
 VITE_FIREBASE_API_KEY=your-api-key
@@ -24,6 +70,115 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
 VITE_FIREBASE_APP_ID=your-app-id
 ```
 
+4. **Run development server**:
+
+```sh
+npm run dev
+```
+
+## Deployment
+
+### GitHub Pages
+
+1. **Update `vite.config.ts`**:
+   Ensure `base` is set to your repository name:
+
+```ts
+export default defineConfig({
+  base: '/octane/', // Must match your repo name
+  // ...
+})
+```
+
+2. **Build for production**:
+
+```sh
+npm run build
+```
+
+3. **Deploy to GitHub Pages**:
+
+**Option A: Using GitHub Actions** (Recommended)
+
+- Create `.github/workflows/deploy.yml`:
+
+```yaml
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/configure-pages@v4
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: './dist'
+      - uses: actions/deploy-pages@v4
+```
+
+**Option B: Manual Deployment**
+
+```sh
+# Install gh-pages
+npm install -D gh-pages
+
+# Deploy
+npx gh-pages -d dist
+```
+
+4. **Configure GitHub Pages**:
+
+- Go to repository settings → Pages
+- Set source to `gh-pages` branch (or GitHub Actions)
+- Access your app at `https://yourusername.github.io/octane/`
+
+## Running the App
+
+### Development Mode
+
+```sh
+npm run dev
+```
+
+Access at `http://localhost:5173`
+
+### Production Build
+
+```sh
+npm run build
+npm run preview
+```
+
+### Running Tests
+
+```sh
+# Run all tests
+npm run test:unit
+
+# Run specific test file
+npm run test:unit tests/app.spec.ts
+
+# Watch mode
+npm run test:unit -- --watch
+```
+
+## Firebase Configuration
+
 ### Firestore Structure
 
 ```
@@ -31,6 +186,21 @@ users/{uid}/
   vehicle/
     data (document) - Single vehicle information
   fuelLogs/{logId} (collection) - Fuel consumption logs
+```
+
+### Security Rules
+
+Ensure your Firestore security rules allow authenticated users to read/write their own data:
+
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
 ```
 
 ## Data Persistence & Offline Behavior
@@ -56,49 +226,47 @@ The application uses **Firestore's persistent local cache** to ensure full offli
 - **No scattered writes**: Components never directly interact with Firebase
 - **Testable**: Firebase calls are mocked in unit tests
 
-## Development
+## Features
 
-### Project Setup
+### Current Features
 
-```sh
-npm install
-```
+- ✅ Google Authentication
+- ✅ Offline-first data persistence
+- ✅ Real-time sync with Firebase
+- ✅ PWA installability
+- ✅ Single-vehicle architecture
 
-### Compile and Hot-Reload for Development
+### Upcoming Features
 
-```sh
-npm run dev
-```
+_Future features will be added here following test-driven development_
 
-### Type-Check, Compile and Minify for Production
+## Development Guidelines
 
-```sh
-npm run build
-```
+### Test-Driven Development (Mandatory)
 
-### Run Unit Tests
-
-```sh
-npm run test:unit
-```
-
-### Lint with ESLint
-
-```sh
-npm run lint
-```
-
-## Testing Requirements
-
-All new functionality must:
+All new functionality **must**:
 
 1. **Add tests first** - Write unit tests before implementation
-2. **Document in README** - Update this file with usage and behavior
+2. **Document in README** - Update this file under "Features" section
 3. **Verify offline** - Test that features work without connectivity
+
+### Code Quality
+
+- Use clear, descriptive naming conventions
+- Avoid premature optimization
+- Add comments only where intent is not obvious
+- No placeholder or demo code without explanation
+
+### Non-Goals (Current Phase)
+
+❌ Fuel entry forms (not yet implemented)  
+❌ Charts and visualizations  
+❌ Efficiency calculations  
+❌ Predictions or analytics
 
 ## Recommended IDE Setup
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar)
+[VS Code](https://code.visualstudio.com/) + [Vue Official Extension](https://marketplace.visualstudio.com/items?itemName=Vue.volar)
 
 ## Single-Vehicle Architecture
 
@@ -106,3 +274,7 @@ This app explicitly supports **one vehicle per user**. The data model does not s
 
 - `vehicle` state is a single object, not an array
 - Firestore path is `users/{uid}/vehicle/data` (single document)
+
+## License
+
+This project is private and not licensed for public use.
