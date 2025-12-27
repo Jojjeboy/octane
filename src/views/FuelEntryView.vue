@@ -9,8 +9,22 @@ const date = ref('')
 const odometer = ref<number | ''>('')
 const fuelAmount = ref<number | ''>('')
 const fuelPrice = ref<number | ''>('')
+const station = ref('')
 const errorMessage = ref('')
 const successMessage = ref('')
+
+const stations = [
+  'Circle K',
+  'Preem',
+  'OKQ8',
+  'St1',
+  'Shell',
+  'Ingo',
+  'QStar',
+  'Tanka',
+  'Bilisten',
+  'Din-X'
+]
 
 // Edit state
 const editingId = ref<string | null>(null)
@@ -30,7 +44,8 @@ const handleSubmit = async () => {
         date: new Date(date.value).toISOString(),
         odometer: Number(odometer.value),
         fuelAmount: Number(fuelAmount.value),
-        fuelPrice: Number(fuelPrice.value)
+        fuelPrice: Number(fuelPrice.value),
+        station: station.value
       })
       successMessage.value = 'Entry updated successfully'
       editingId.value = null
@@ -40,7 +55,8 @@ const handleSubmit = async () => {
         date: new Date(date.value).toISOString(),
         odometer: Number(odometer.value),
         fuelAmount: Number(fuelAmount.value),
-        fuelPrice: Number(fuelPrice.value)
+        fuelPrice: Number(fuelPrice.value),
+        station: station.value
       }
       await fuelEntryStore.createEntry(entry)
       successMessage.value = 'Fuel entry added successfully'
@@ -50,6 +66,7 @@ const handleSubmit = async () => {
     odometer.value = ''
     fuelAmount.value = ''
     fuelPrice.value = ''
+    station.value = ''
     date.value = new Date().toISOString().slice(0, 16)
 
   } catch (error: any) {
@@ -65,6 +82,7 @@ const startEdit = (entryId: string) => {
     odometer.value = entry.odometer
     fuelAmount.value = entry.fuelAmount
     fuelPrice.value = entry.fuelPrice
+    station.value = entry.station || ''
     // Scroll to form
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -75,6 +93,7 @@ const cancelEdit = () => {
   odometer.value = ''
   fuelAmount.value = ''
   fuelPrice.value = ''
+  station.value = ''
   date.value = new Date().toISOString().slice(0, 16)
 }
 
@@ -149,6 +168,14 @@ const handleDelete = async (entryId: string) => {
           />
         </div>
 
+        <div class="form-group">
+          <label for="station">Gas Station:</label>
+          <select v-model="station" id="station">
+            <option value="">Select a station (optional)</option>
+            <option v-for="s in stations" :key="s" :value="s">{{ s }}</option>
+          </select>
+        </div>
+
         <button type="submit" class="btn-submit">{{ editingId ? 'Update' : 'Add' }} Entry</button>
         <button v-if="editingId" type="button" @click="cancelEdit" class="btn-cancel">Cancel</button>
 
@@ -169,7 +196,10 @@ const handleDelete = async (entryId: string) => {
           <div class="entry-details">
             <span class="entry-date">{{ new Date(entry.date).toLocaleDateString() }}</span>
             <span class="entry-odometer">{{ entry.odometer }} km</span>
-            <span class="entry-fuel">{{ entry.fuelAmount }} L @ ${{ entry.fuelPrice }}/L</span>
+            <span class="entry-fuel">
+              {{ entry.fuelAmount }} L @ ${{ entry.fuelPrice }}/L
+              <span v-if="entry.station" class="entry-station">({{ entry.station }})</span>
+            </span>
           </div>
           <div class="entry-actions">
             <button @click="startEdit(entry.id)" class="btn-edit">Edit</button>
@@ -204,10 +234,17 @@ const handleDelete = async (entryId: string) => {
   font-weight: bold;
 }
 
-.form-group input {
+.form-group input,
+.form-group select {
   width: 100%;
   padding: 8px;
   box-sizing: border-box;
+}
+
+.entry-station {
+  font-style: italic;
+  color: #666;
+  margin-left: 5px;
 }
 
 .btn-submit {

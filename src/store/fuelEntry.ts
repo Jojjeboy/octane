@@ -19,6 +19,7 @@ export interface FuelEntry {
   odometer: number
   fuelAmount: number
   fuelPrice: number
+  station?: string
   createdAt: string
   updatedAt: string
 }
@@ -28,6 +29,7 @@ export interface CreateFuelEntryInput {
   odometer: number
   fuelAmount: number
   fuelPrice: number
+  station?: string
 }
 
 export interface UpdateFuelEntryInput {
@@ -35,6 +37,7 @@ export interface UpdateFuelEntryInput {
   odometer?: number
   fuelAmount?: number
   fuelPrice?: number
+  station?: string
 }
 
 // Validation function for creation
@@ -178,8 +181,8 @@ export const useFuelEntryStore = defineStore('fuelEntry', () => {
     }
 
     // Update local state optimistically
-    const updatedEntry = {
-      ...entries.value[entryIndex],
+    const updatedEntry: FuelEntry = {
+      ...entries.value[entryIndex]!,
       ...updates,
       updatedAt: new Date().toISOString()
     }

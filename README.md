@@ -245,6 +245,7 @@ The application uses **Firestore's persistent local cache** to ensure full offli
 - ✅ Single-vehicle architecture
 - ✅ **Fuel Entry Creation** - Add fuel fill-up records with validation
 - ✅ **Fuel Entry Update & Delete** - Edit and delete entries with offline support
+- ✅ **Fuel Efficiency & Cost Calculations** - Pure domain logic for deriving metrics
 
 ### Fuel Entry Domain Model
 
@@ -255,6 +256,7 @@ The `FuelEntry` represents a single fuel fill-up with the following fields:
 - **odometer** (number): Odometer reading (must be positive)
 - **fuelAmount** (number): Fuel quantity (must be positive)
 - **fuelPrice** (number): Price per unit (must be positive)
+- **station** (string): Gas station name (optional)
 - **createdAt** (timestamp): When the entry was created
 - **updatedAt** (timestamp): Last modification time
 
@@ -288,13 +290,31 @@ The `FuelEntry` represents a single fuel fill-up with the following fields:
 - Delete operations sync to Firebase when online
 - No resurrection of deleted entries after sync
 
-#### Conflict Resolution
-
-- **Strategy**: Last-Write-Wins (LWW)
-- Uses Firestore's `serverTimestamp()` for `updatedAt`
-- Firestore automatically resolves conflicts using timestamps
-- Updates use `setDoc()` with `merge: true` to preserve timestamp ordering
 - Deterministic and prevents data corruption
+
+### Fuel Calculations
+
+The application includes a pure domain calculation layer (`src/domain/fuelCalculations.ts`) that derives metrics from fuel entries.
+
+#### Pure Domain Logic
+
+- **No Side Effects**: Functions are pure and do not perform I/O, network calls, or state mutations.
+- **Unit-Agnostic**: Calculations are based on inputs; they do not assume specific units (e.g., handles both km/L and MPG if units are consistent).
+- **Deterministic**: Identical inputs always produce identical outputs.
+- **No Dependencies**: Independent of Vue, Pinia, or Firebase.
+
+#### Metrics Definitions
+
+- **Average Efficiency**: (Total distance traveled) / (Total fuel consumed). Calculated from the first entry (baseline) to the last entry.
+- **Per-Entry Efficiency**: Efficiency for a specific fill-up, calculated as (Distance since previous fill-up) / (Fuel added at this fill-up).
+- **Average Cost per Distance**: (Total cost of fuel) / (Total distance traveled).
+
+#### Edge Case Behavior
+
+- **Fewer than Two Entries**: Returns `null` or empty results, as progress cannot be measured.
+- **Non-Monotonic Odometer**: Throws an explicit error if odometer readings decrease or stay the same.
+- **Invalid Fuel Amounts**: Throws an error if fuel amounts are zero or negative.
+- **Large Datasets**: Optimized for efficiency without unnecessary recomputation.
 
 ### Upcoming Features
 
@@ -321,7 +341,6 @@ All new functionality **must**:
 
 ❌ Fuel entry forms (not yet implemented)  
 ❌ Charts and visualizations  
-❌ Efficiency calculations  
 ❌ Predictions or analytics
 
 ## Recommended IDE Setup
