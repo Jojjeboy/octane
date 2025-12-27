@@ -12,6 +12,8 @@ import {
   deleteDoc,
 } from 'firebase/firestore'
 import { db, auth } from '@/services/firebase'
+import { useSyncStore } from '@/store/sync'
+import { exportToJSON } from '@/utils/export'
 import {
   calculateAverageEfficiency,
   calculatePerEntryEfficiency,
@@ -89,6 +91,7 @@ function validateUpdateData(updates: UpdateFuelEntryInput): void {
 }
 
 export const useFuelEntryStore = defineStore('fuelEntry', () => {
+  const syncStore = useSyncStore()
   const entries = ref<FuelEntry[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -178,9 +181,14 @@ export const useFuelEntryStore = defineStore('fuelEntry', () => {
         ...doc.data()
       })) as FuelEntry[]
       loading.value = false
+
+      // Update sync store status
+      syncStore.setPending(snapshot.metadata.hasPendingWrites)
+      syncStore.setError(null)
     }, (err) => {
       console.error('Fuel entries sync error:', err)
       error.value = err.message
+      syncStore.setError(err.message)
       loading.value = false
     })
   }
@@ -205,6 +213,7 @@ export const useFuelEntryStore = defineStore('fuelEntry', () => {
     }
 
     try {
+      syncStore.setSyncing(true)
       // Attempt to write to Firebase
       const entriesCol = collection(db, 'users', user.uid, 'fuelEntries')
       const docRef = await addDoc(entriesCol, {
@@ -218,6 +227,7 @@ export const useFuelEntryStore = defineStore('fuelEntry', () => {
         id: docRef.id,
         ...newEntry
       })
+      syncStore.setSyncing(false)
 
     } catch (err: any) {
       // If offline, still add to local state
@@ -230,6 +240,7 @@ export const useFuelEntryStore = defineStore('fuelEntry', () => {
         id: tempId,
         ...newEntry
       })
+      syncStore.setSyncing(false)
     }
   }
 
@@ -260,14 +271,17 @@ export const useFuelEntryStore = defineStore('fuelEntry', () => {
     entries.value[entryIndex] = updatedEntry
 
     try {
+      syncStore.setSyncing(true)
       // Sync to Firebase
       const entryRef = doc(db, 'users', user.uid, 'fuelEntries', entryId)
       await setDoc(entryRef, {
         ...updates,
         updatedAt: serverTimestamp()
       }, { merge: true })
+      syncStore.setSyncing(false)
     } catch (err: any) {
       // Offline - Firestore persistence handles queuing
+      syncStore.setSyncing(false)
       console.warn('Failed to sync update to Firebase:', err.message)
     }
   }
@@ -285,11 +299,14 @@ export const useFuelEntryStore = defineStore('fuelEntry', () => {
     entries.value = entries.value.filter(e => e.id !== entryId)
 
     try {
+      syncStore.setSyncing(true)
       // Delete from Firebase
       const entryRef = doc(db, 'users', user.uid, 'fuelEntries', entryId)
       await deleteDoc(entryRef)
+      syncStore.setSyncing(false)
     } catch (err: any) {
       // Offline - Firestore persistence handles queuing
+      syncStore.setSyncing(false)
       console.warn('Failed to delete from Firebase:', err.message)
     }
   }
@@ -304,6 +321,21 @@ export const useFuelEntryStore = defineStore('fuelEntry', () => {
     entries.value = []
   }
 
+  /**
+   * Export all fuel entries as JSON
+   */
+  const exportEntries = () => {
+    const data = {
+      exportedAt: new Date().toISOString(),
+      entries: entries.value,
+      metadata: {
+        totalEntries: entries.value.length,
+        version: '1.0'
+      }
+    }
+    exportToJSON(data, `octane-backup-${new Date().toISOString().split('T')[0]}`)
+  }
+
   return {
     entries,
     loading,
@@ -313,6 +345,7 @@ export const useFuelEntryStore = defineStore('fuelEntry', () => {
     updateEntry,
     deleteEntry,
     cleanup,
+    exportEntries,
     // Metrics
     averageEfficiency,
     perEntryEfficiency,

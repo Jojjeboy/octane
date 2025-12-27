@@ -159,6 +159,12 @@ const handleDelete = async (entryId: string) => {
           />
         </div>
       </div>
+
+      <div class="backup-section">
+        <button @click="fuelEntryStore.exportEntries" class="btn-secondary">
+          Export All Data (JSON)
+        </button>
+      </div>
     </section>
 
     <!-- Add/Edit Entry Form -->
@@ -389,6 +395,24 @@ const handleDelete = async (entryId: string) => {
   margin-top: 30px;
   border-top: 1px dashed #ddd;
   padding-top: 20px;
+}
+
+.backup-section {
+  margin-top: 20px;
+  text-align: right;
+}
+
+.btn-secondary {
+  background-color: #f0f0f0;
+  color: #666;
+  border: 1px solid #ddd;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background-color: #e5e5e5;
 }
 
 .btn-edit, .btn-delete {

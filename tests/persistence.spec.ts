@@ -109,7 +109,8 @@ describe('Vehicle Store Persistence', () => {
     // Simulate Firestore update
     const mockSnap = {
       exists: () => true,
-      data: () => ({ name: 'Synced Car', make: 'Ford' })
+      data: () => ({ name: 'Synced Car', make: 'Ford' }),
+      metadata: { hasPendingWrites: false }
     }
 
     if (vehicleCallback) {

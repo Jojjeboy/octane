@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
+import { watch, onMounted } from 'vue'
 import { useAuthStore } from '@/store/auth'
 import { useVehicleStore } from '@/store/vehicle'
-import { watch } from 'vue'
+import { useFuelEntryStore } from '@/store/fuelEntry'
+import { useSyncStore } from '@/store/sync'
+import { initConnectivityTracker } from '@/services/connectivity'
+import SyncStatusIndicator from '@/components/SyncStatusIndicator.vue'
 
 const authStore = useAuthStore()
 const vehicleStore = useVehicleStore()
-
-import { useFuelEntryStore } from '@/store/fuelEntry'
 const fuelEntryStore = useFuelEntryStore()
+const syncStore = useSyncStore()
 
 // React to auth changes
 watch(() => authStore.user, (user) => {
@@ -20,6 +23,12 @@ watch(() => authStore.user, (user) => {
     fuelEntryStore.cleanup()
   }
 }, { immediate: true })
+
+onMounted(() => {
+  initConnectivityTracker((isOnline) => {
+    syncStore.setOnline(isOnline)
+  })
+})
 </script>
 
 
@@ -27,10 +36,29 @@ watch(() => authStore.user, (user) => {
   <div v-if="authStore.loading" class="center-content full-height">
     <p>Loading Octane...</p>
   </div>
-  <RouterView v-else />
+  <div v-else class="app-layout">
+    <header class="app-header">
+      <SyncStatusIndicator />
+    </header>
+    <RouterView />
+  </div>
 </template>
 
 <style scoped>
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app-header {
+  padding: 10px 20px;
+  display: flex;
+  justify-content: flex-end;
+  background: #fff;
+  border-bottom: 1px solid #eee;
+}
+
 .full-height {
   height: 100vh;
   display: flex;

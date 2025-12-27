@@ -149,7 +149,8 @@ describe('Fuel Store Derived Metrics (TDD)', () => {
         docs: sampleEntries.map(e => ({
             id: e.id,
             data: () => ({ ...e })
-        }))
+        })),
+        metadata: { hasPendingWrites: false }
     }
 
     if (snapshotCallback) {

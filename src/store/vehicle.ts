@@ -12,6 +12,7 @@ import {
   updateDoc,
 } from 'firebase/firestore'
 import { db, auth } from '@/services/firebase'
+import { useSyncStore } from '@/store/sync'
 
 export interface FuelLog {
   id: string
@@ -32,6 +33,7 @@ export interface Vehicle {
 }
 
 export const useVehicleStore = defineStore('vehicle', () => {
+  const syncStore = useSyncStore()
   const vehicle = ref<Vehicle | null>(null)
   const fuelLogs = ref<FuelLog[]>([])
   const loading = ref(false)
@@ -68,9 +70,11 @@ export const useVehicleStore = defineStore('vehicle', () => {
         vehicle.value = null // No vehicle set up yet
       }
       loading.value = false
+      syncStore.setPending(docSnap.metadata.hasPendingWrites)
     }, (err) => {
       console.error('Vehicle sync error:', err)
       error.value = err.message
+      syncStore.setError(err.message)
     })
 
     // 2. Subscribe to Fuel Logs (ordered by date desc)
@@ -80,6 +84,7 @@ export const useVehicleStore = defineStore('vehicle', () => {
         id: doc.id,
         ...doc.data()
       })) as FuelLog[]
+      syncStore.setPending(querySnap.metadata.hasPendingWrites)
     }, (err) => {
       console.error('Fuel logs sync error:', err)
        // Don't overwrite main error if it's just a query issue
@@ -95,12 +100,14 @@ export const useVehicleStore = defineStore('vehicle', () => {
     if (!user) return
 
     try {
+      syncStore.setSyncing(true)
       const vehicleRef = doc(db, 'users', user.uid, 'vehicle', 'data')
       await setDoc(vehicleRef, { // using setDoc to create or overwrite
         ...data,
         updatedAt: serverTimestamp() // Conflict resolution aid
       }, { merge: true })
       // No need to update state manually, listener handles it
+      syncStore.setSyncing(false)
     } catch (err: any) {
       console.error('Error saving vehicle:', err)
       error.value = err.message
@@ -116,11 +123,13 @@ export const useVehicleStore = defineStore('vehicle', () => {
     if (!user) return
 
     try {
+      syncStore.setSyncing(true)
       await addDoc(collection(db, 'users', user.uid, 'fuelLogs'), {
         ...log,
         createdAt: serverTimestamp()
       })
       // No need to update state manually, listener handles it
+      syncStore.setSyncing(false)
     } catch (err: any) {
        console.error('Error adding log:', err)
        error.value = err.message

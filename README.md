@@ -249,6 +249,8 @@ The application uses **Firestore's persistent local cache** to ensure full offli
 - ✅ **Fuel Efficiency & Cost Calculations** - Pure domain logic for deriving metrics
 - ✅ **Charts & Visualizations** - Visual representation of efficiency and cost metrics
 - ✅ **Predictive Insights** - Estimated range and cost predictions based on historical data
+- ✅ **Connectivity & Sync Status** - Real-time feedback on network status and data synchronization
+- ✅ **Data Export & Backup** - Offline-safe JSON exports of all fuel entry data
 
 ### Fuel Calculations
 
@@ -283,6 +285,45 @@ The calculations are integrated into the `fuelEntry` store as reactive, read-onl
 - **Non-Persistent**: Metrics are never stored in Firestore; only the raw fuel entries are persisted.
 - **Offline Functional**: Calculations work entirely in-memory, providing immediate feedback even without an internet connection.
 - **Sync Reconciliation**: Metrics remain stable during background synchronization as the store reconciles local changes with server data.
+
+### Connectivity & Sync Status
+
+The application monitors network connectivity and data synchronization status to provide users with clear feedback on their data's integrity and state.
+
+#### Connectivity Detection
+
+- **Mechanism**: Uses the browser's `navigator.onLine` API and listens for `online`/`offline` window events.
+- **Service**: Managed by a dedicated `connectivity` service (`src/services/connectivity.ts`) that is decoupled from UI components.
+
+#### Synchronization States
+
+- **Synced**: All local changes have been successfully uploaded to the server and local data is up-to-date.
+- **Syncing**: Data is currently being transmitted to or from Firestore.
+- **Changes Pending**: The app is online, but some local writes are still waiting to be acknowledged by the server.
+- **Offline**: The device has no internet connection. The app remains fully functional, queuing all changes locally.
+- **Sync Error**: A transient error occurred during synchronization.
+
+#### Implementation
+
+- **Firestore Metadata**: Sync status is derived from Firestore's `snapshot.metadata.hasPendingWrites`, providing an accurate reflection of synchronization progress.
+- **Reactive State**: Status is managed globally via a `sync` store and displayed using a non-intrusive indicator.
+- **Unimpeded UX**: All sync indicators are informational only; the app never blocks user actions based on network status.
+
+### Data Export & Backup
+
+The application allows users to create local backups of their data to ensure portability and data safety.
+
+#### Features
+
+- **Offline-Safe Export**: Generate a complete JSON backup of all fuel entries directly from local state. Works without an internet connection.
+- **Deterministic Data**: Exported files include metadata such as export date and versioning for reliable data recovery.
+- **Portability**: Data is exported in a standard JSON format, making it easy to view or process in other tools.
+
+#### Implementation
+
+- **Store-Driven**: Export logic pulls data directly from the Pinia store, ensuring it reflects the latest local changes (including optimistic updates not yet synced).
+- **Blob-Based Downloads**: Uses browser APIs to generate and trigger the download of a JSON file without server interaction.
+- **Privacy-First**: Backups are stored locally on the user's device.
 
 ### Charts & Visualizations
 

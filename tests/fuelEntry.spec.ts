@@ -195,7 +195,8 @@ describe('Fuel Entry Domain Model & CRUD (TDD)', () => {
               updatedAt: 'TIMESTAMP'
             })
           }
-        ]
+        ],
+        metadata: { hasPendingWrites: false }
       }
 
       if (snapshotCallback) {
@@ -388,7 +389,7 @@ describe('Fuel Entry Domain Model & CRUD (TDD)', () => {
       store.init()
 
       // Snapshot comes back empty (entry was deleted on server)
-      const mockSnapshot = { docs: [] }
+      const mockSnapshot = { docs: [], metadata: { hasPendingWrites: false } }
 
       if (snapshotCallback) {
         snapshotCallback(mockSnapshot)
