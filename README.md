@@ -316,6 +316,16 @@ The application includes a pure domain calculation layer (`src/domain/fuelCalcul
 - **Invalid Fuel Amounts**: Throws an error if fuel amounts are zero or negative.
 - **Large Datasets**: Optimized for efficiency without unnecessary recomputation.
 
+#### Derived Metrics in State
+
+The calculations are integrated into the `fuelEntry` store as reactive, read-only derived metrics.
+
+- **Reactive Updates**: Metrics automatically recompute whenever fuel entries are added, updated, or deleted.
+- **Read-Only**: Derived metrics are computed on-the-fly and cannot be directly modified.
+- **Non-Persistent**: Metrics are never stored in Firestore; only the raw fuel entries are persisted. This ensures the single source of truth remains the raw data while calculations stay deterministic.
+- **Offline Functional**: Calculations work entirely in-memory, providing immediate feedback even without an internet connection.
+- **Sync Reconciliation**: Metrics remain stable during background synchronization as the store reconciles local changes with server data.
+
 ### Upcoming Features
 
 _Future features will be added here following test-driven development_

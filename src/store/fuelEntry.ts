@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import {
   collection,
@@ -12,6 +12,11 @@ import {
   deleteDoc,
 } from 'firebase/firestore'
 import { db, auth } from '@/services/firebase'
+import {
+  calculateAverageEfficiency,
+  calculatePerEntryEfficiency,
+  calculateAverageCostPerDistance
+} from '@/domain/fuelCalculations'
 
 export interface FuelEntry {
   id: string
@@ -83,6 +88,43 @@ export const useFuelEntryStore = defineStore('fuelEntry', () => {
   const entries = ref<FuelEntry[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
+
+  // Derived metrics (read-only)
+
+  /**
+   * Helper to get entries in chronological order (odometer ascending)
+   * as the calculation module assumes this order.
+   */
+  const chronologicalEntries = computed(() => {
+    return [...entries.value].sort((a, b) => a.odometer - b.odometer)
+  })
+
+  const averageEfficiency = computed(() => {
+    try {
+      return calculateAverageEfficiency(chronologicalEntries.value)
+    } catch (err: any) {
+      console.error('Efficiency calculation error:', err.message)
+      return null
+    }
+  })
+
+  const perEntryEfficiency = computed(() => {
+    try {
+      return calculatePerEntryEfficiency(chronologicalEntries.value)
+    } catch (err: any) {
+      console.error('Per-entry efficiency calculation error:', err.message)
+      return []
+    }
+  })
+
+  const averageCostPerDistance = computed(() => {
+    try {
+      return calculateAverageCostPerDistance(chronologicalEntries.value)
+    } catch (err: any) {
+      console.error('Cost calculation error:', err.message)
+      return null
+    }
+  })
 
   let unsubscribe: (() => void) | null = null
 
@@ -241,6 +283,10 @@ export const useFuelEntryStore = defineStore('fuelEntry', () => {
     createEntry,
     updateEntry,
     deleteEntry,
-    cleanup
+    cleanup,
+    // Metrics
+    averageEfficiency,
+    perEntryEfficiency,
+    averageCostPerDistance
   }
 })
