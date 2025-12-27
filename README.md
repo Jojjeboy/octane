@@ -1,29 +1,64 @@
-# .
+# Octane - Fuel & Mileage Tracker
 
-This template should help get you started developing with Vue 3 in Vite.
+A Progressive Web App (PWA) for tracking fuel consumption and mileage, built with Vue 3, Vite, and Firebase.
 
-## Recommended IDE Setup
+## Features
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+- **Offline-First**: Works fully offline with automatic sync when connectivity is restored
+- **Firebase Authentication**: Secure Google Sign-In
+- **Real-time Sync**: Automatic data synchronization across devices
+- **PWA**: Install as a native-like app on any device
 
-## Recommended Browser Setup
+## Firebase Configuration
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd) 
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+### Prerequisites
 
-## Type Support for `.vue` Imports in TS
+Ensure the following environment variables are set (create a `.env` file):
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
+```env
+VITE_FIREBASE_API_KEY=your-api-key
+VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your-project-id
+VITE_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
+VITE_FIREBASE_APP_ID=your-app-id
+```
 
-## Customize configuration
+### Firestore Structure
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+```
+users/{uid}/
+  vehicle/
+    data (document) - Single vehicle information
+  fuelLogs/{logId} (collection) - Fuel consumption logs
+```
 
-## Project Setup
+## Data Persistence & Offline Behavior
+
+### Offline-First Architecture
+
+The application uses **Firestore's persistent local cache** to ensure full offline functionality:
+
+1. **All user actions succeed offline** - Create, read, update, and delete operations work without connectivity
+2. **Local cache** - Data is stored in IndexedDB via Firestore's `persistentLocalCache`
+3. **Automatic sync** - When connectivity is restored, all pending changes sync to Firebase automatically
+4. **Real-time updates** - Uses Firestore `onSnapshot` for live data synchronization
+
+### Conflict Resolution
+
+- **Strategy**: Last-Write-Wins (LWW) using Firestore's default behavior
+- **Timestamps**: `serverTimestamp()` is used for `createdAt` and `updatedAt` fields
+- **Deterministic**: All writes include server timestamps to ensure consistent ordering
+
+### State Management
+
+- **Centralized**: All Firebase interactions flow through the Pinia `vehicleStore`
+- **No scattered writes**: Components never directly interact with Firebase
+- **Testable**: Firebase calls are mocked in unit tests
+
+## Development
+
+### Project Setup
 
 ```sh
 npm install
@@ -41,14 +76,33 @@ npm run dev
 npm run build
 ```
 
-### Run Unit Tests with [Vitest](https://vitest.dev/)
+### Run Unit Tests
 
 ```sh
 npm run test:unit
 ```
 
-### Lint with [ESLint](https://eslint.org/)
+### Lint with ESLint
 
 ```sh
 npm run lint
 ```
+
+## Testing Requirements
+
+All new functionality must:
+
+1. **Add tests first** - Write unit tests before implementation
+2. **Document in README** - Update this file with usage and behavior
+3. **Verify offline** - Test that features work without connectivity
+
+## Recommended IDE Setup
+
+[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar)
+
+## Single-Vehicle Architecture
+
+This app explicitly supports **one vehicle per user**. The data model does not support multiple vehicles:
+
+- `vehicle` state is a single object, not an array
+- Firestore path is `users/{uid}/vehicle/data` (single document)
