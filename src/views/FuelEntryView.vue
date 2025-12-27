@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useFuelEntryStore, type CreateFuelEntryInput } from '@/store/fuelEntry'
+import EfficiencyTrendChart from '@/components/EfficiencyTrendChart.vue'
+import AverageMetric from '@/components/AverageMetric.vue'
 
 const fuelEntryStore = useFuelEntryStore()
 
@@ -113,6 +115,35 @@ const handleDelete = async (entryId: string) => {
 <template>
   <main class="fuel-entry-view">
     <h1>Fuel Entries</h1>
+
+    <!-- Statistics -->
+    <section class="statistics" v-if="fuelEntryStore.entries.length >= 2">
+      <h2>Statistics</h2>
+      <div class="metrics-grid">
+        <AverageMetric
+          label="Average Efficiency"
+          :value="fuelEntryStore.averageEfficiency"
+          unit="km/L"
+        />
+        <AverageMetric
+          label="Avg Cost per Distance"
+          :value="fuelEntryStore.averageCostPerDistance"
+          unit="$/km"
+          :precision="4"
+        />
+      </div>
+
+      <div class="chart-section">
+        <h3>Efficiency Trend</h3>
+        <EfficiencyTrendChart
+          :metrics="fuelEntryStore.perEntryEfficiency"
+          :dates="fuelEntryStore.perEntryEfficiency.map(m => {
+            const entry = fuelEntryStore.entries.find(e => e.id === m.entryId)
+            return entry ? new Date(entry.date).toLocaleDateString() : ''
+          })"
+        />
+      </div>
+    </section>
 
     <!-- Add/Edit Entry Form -->
     <section class="entry-form">
@@ -311,6 +342,30 @@ const handleDelete = async (entryId: string) => {
 .entry-actions {
   display: flex;
   gap: 10px;
+}
+
+.statistics {
+  margin-bottom: 40px;
+  padding: 20px;
+  background: #fff;
+  border: 1px solid #ddd;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.chart-section {
+  margin-top: 20px;
+}
+
+.chart-section h3 {
+  margin-bottom: 10px;
+  font-size: 1rem;
+  color: #666;
 }
 
 .btn-edit, .btn-delete {

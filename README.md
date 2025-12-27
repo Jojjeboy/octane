@@ -246,6 +246,23 @@ The application uses **Firestore's persistent local cache** to ensure full offli
 - ✅ **Fuel Entry Creation** - Add fuel fill-up records with validation
 - ✅ **Fuel Entry Update & Delete** - Edit and delete entries with offline support
 - ✅ **Fuel Efficiency & Cost Calculations** - Pure domain logic for deriving metrics
+- ✅ **Charts & Visualizations** - Visual representation of efficiency and cost metrics
+
+### Charts & Visualizations
+
+The application provides visual insights into fuel consumption using derived metrics:
+
+- **Efficiency Trend Chart**: A line chart showing fuel efficiency for each fill-up over time.
+- **Average Efficiency Metric**: A single-value display of the overall average fuel efficiency.
+- **Average Cost per Distance**: A single-value display of the average cost spent per unit of distance.
+
+#### Implementation & Offline Safety
+
+- **Data Driven**: Charts are purely driven by read-only derived metrics from the store.
+- **No Side Effects**: Rendering charts does not trigger any persistence, network calls, or calculations.
+- **Offline Safe**: Works entirely offline using locally cached data.
+- **Reactive**: Charts automatically update whenever fuel entries are added, modified, or deleted.
+- **Error Resilient**: Displays clear placeholders when data is insufficient (less than 2 entries) for calculation.
 
 ### Fuel Entry Domain Model
 
