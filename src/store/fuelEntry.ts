@@ -7,6 +7,9 @@ import {
   serverTimestamp,
   query,
   orderBy,
+  doc,
+  setDoc,
+  deleteDoc,
 } from 'firebase/firestore'
 import { db, auth } from '@/services/firebase'
 
@@ -27,7 +30,14 @@ export interface CreateFuelEntryInput {
   fuelPrice: number
 }
 
-// Validation function
+export interface UpdateFuelEntryInput {
+  date?: string
+  odometer?: number
+  fuelAmount?: number
+  fuelPrice?: number
+}
+
+// Validation function for creation
 function validateFuelEntry(input: CreateFuelEntryInput): void {
   if (input.odometer <= 0) {
     throw new Error('Odometer must be positive')
@@ -43,6 +53,26 @@ function validateFuelEntry(input: CreateFuelEntryInput): void {
   const now = new Date()
   if (entryDate > now) {
     throw new Error('Date cannot be in the future')
+  }
+}
+
+// Validation function for updates
+function validateUpdateData(updates: UpdateFuelEntryInput): void {
+  if (updates.odometer !== undefined && updates.odometer <= 0) {
+    throw new Error('Odometer must be positive')
+  }
+  if (updates.fuelAmount !== undefined && updates.fuelAmount <= 0) {
+    throw new Error('Fuel amount must be positive')
+  }
+  if (updates.fuelPrice !== undefined && updates.fuelPrice <= 0) {
+    throw new Error('Fuel price must be positive')
+  }
+  if (updates.date !== undefined) {
+    const entryDate = new Date(updates.date)
+    const now = new Date()
+    if (entryDate > now) {
+      throw new Error('Date cannot be in the future')
+    }
   }
 }
 
@@ -130,6 +160,67 @@ export const useFuelEntryStore = defineStore('fuelEntry', () => {
   }
 
   /**
+   * Update an existing fuel entry
+   */
+  const updateEntry = async (entryId: string, updates: UpdateFuelEntryInput): Promise<void> => {
+    // Validate update data
+    validateUpdateData(updates)
+
+    const user = auth.currentUser
+    if (!user) {
+      throw new Error('User not authenticated')
+    }
+
+    // Find the entry in local state
+    const entryIndex = entries.value.findIndex(e => e.id === entryId)
+    if (entryIndex === -1) {
+      throw new Error('Entry not found')
+    }
+
+    // Update local state optimistically
+    const updatedEntry = {
+      ...entries.value[entryIndex],
+      ...updates,
+      updatedAt: new Date().toISOString()
+    }
+    entries.value[entryIndex] = updatedEntry
+
+    try {
+      // Sync to Firebase
+      const entryRef = doc(db, 'users', user.uid, 'fuelEntries', entryId)
+      await setDoc(entryRef, {
+        ...updates,
+        updatedAt: serverTimestamp()
+      }, { merge: true })
+    } catch (err: any) {
+      // Offline - Firestore persistence handles queuing
+      console.warn('Failed to sync update to Firebase:', err.message)
+    }
+  }
+
+  /**
+   * Delete a fuel entry (hard delete)
+   */
+  const deleteEntry = async (entryId: string): Promise<void> => {
+    const user = auth.currentUser
+    if (!user) {
+      throw new Error('User not authenticated')
+    }
+
+    // Remove from local state immediately (optimistic)
+    entries.value = entries.value.filter(e => e.id !== entryId)
+
+    try {
+      // Delete from Firebase
+      const entryRef = doc(db, 'users', user.uid, 'fuelEntries', entryId)
+      await deleteDoc(entryRef)
+    } catch (err: any) {
+      // Offline - Firestore persistence handles queuing
+      console.warn('Failed to delete from Firebase:', err.message)
+    }
+  }
+
+  /**
    * Cleanup listener
    */
   const cleanup = () => {
@@ -145,6 +236,8 @@ export const useFuelEntryStore = defineStore('fuelEntry', () => {
     error,
     init,
     createEntry,
+    updateEntry,
+    deleteEntry,
     cleanup
   }
 })

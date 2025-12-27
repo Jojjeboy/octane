@@ -244,6 +244,7 @@ The application uses **Firestore's persistent local cache** to ensure full offli
 - ✅ PWA installability
 - ✅ Single-vehicle architecture
 - ✅ **Fuel Entry Creation** - Add fuel fill-up records with validation
+- ✅ **Fuel Entry Update & Delete** - Edit and delete entries with offline support
 
 ### Fuel Entry Domain Model
 
@@ -262,13 +263,38 @@ The `FuelEntry` represents a single fuel fill-up with the following fields:
 - Odometer, fuel amount, and price must be positive
 - Date cannot be in the future
 - All fields are required
+- Updates must also pass the same validation rules
 
-#### Offline Behavior
+#### CRUD Operations
+
+**Create**
 
 - Fuel entries can be created while offline
 - Entries are stored locally immediately
 - Automatic sync to Firebase when connectivity is restored
 - No duplicates created during sync
+
+**Update**
+
+- Entries can be edited while offline
+- Updates persist locally with immediate UI feedback
+- `updatedAt` timestamp automatically updated
+- Changes sync to Firebase when online
+
+**Delete**
+
+- **Strategy**: Hard delete using Firestore `deleteDoc()`
+- Entries removed from local state immediately (optimistic)
+- Delete operations sync to Firebase when online
+- No resurrection of deleted entries after sync
+
+#### Conflict Resolution
+
+- **Strategy**: Last-Write-Wins (LWW)
+- Uses Firestore's `serverTimestamp()` for `updatedAt`
+- Firestore automatically resolves conflicts using timestamps
+- Updates use `setDoc()` with `merge: true` to preserve timestamp ordering
+- Deterministic and prevents data corruption
 
 ### Upcoming Features
 
