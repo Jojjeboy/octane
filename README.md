@@ -192,6 +192,7 @@ users/{uid}/
     - odometer (number): Odometer reading in km/miles
     - fuelAmount (number): Fuel quantity in liters/gallons
     - fuelPrice (number): Price per unit
+    - station (string): Gas station name (optional)
     - createdAt (timestamp): Creation timestamp
     - updatedAt (timestamp): Last update timestamp
 ```
@@ -230,7 +231,7 @@ The application uses **Firestore's persistent local cache** to ensure full offli
 
 ### State Management
 
-- **Centralized**: All Firebase interactions flow through the Pinia `vehicleStore`
+- **Centralized**: All Firebase interactions flow through the Pinia `vehicleStore` and `fuelEntryStore`
 - **No scattered writes**: Components never directly interact with Firebase
 - **Testable**: Firebase calls are mocked in unit tests
 
@@ -247,67 +248,7 @@ The application uses **Firestore's persistent local cache** to ensure full offli
 - ✅ **Fuel Entry Update & Delete** - Edit and delete entries with offline support
 - ✅ **Fuel Efficiency & Cost Calculations** - Pure domain logic for deriving metrics
 - ✅ **Charts & Visualizations** - Visual representation of efficiency and cost metrics
-
-### Charts & Visualizations
-
-The application provides visual insights into fuel consumption using derived metrics:
-
-- **Efficiency Trend Chart**: A line chart showing fuel efficiency for each fill-up over time.
-- **Average Efficiency Metric**: A single-value display of the overall average fuel efficiency.
-- **Average Cost per Distance**: A single-value display of the average cost spent per unit of distance.
-
-#### Implementation & Offline Safety
-
-- **Data Driven**: Charts are purely driven by read-only derived metrics from the store.
-- **No Side Effects**: Rendering charts does not trigger any persistence, network calls, or calculations.
-- **Offline Safe**: Works entirely offline using locally cached data.
-- **Reactive**: Charts automatically update whenever fuel entries are added, modified, or deleted.
-- **Error Resilient**: Displays clear placeholders when data is insufficient (less than 2 entries) for calculation.
-
-### Fuel Entry Domain Model
-
-The `FuelEntry` represents a single fuel fill-up with the following fields:
-
-- **id** (string): Unique identifier
-- **date** (ISO 8601): Fill-up date and time
-- **odometer** (number): Odometer reading (must be positive)
-- **fuelAmount** (number): Fuel quantity (must be positive)
-- **fuelPrice** (number): Price per unit (must be positive)
-- **station** (string): Gas station name (optional)
-- **createdAt** (timestamp): When the entry was created
-- **updatedAt** (timestamp): Last modification time
-
-#### Validation Rules
-
-- Odometer, fuel amount, and price must be positive
-- Date cannot be in the future
-- All fields are required
-- Updates must also pass the same validation rules
-
-#### CRUD Operations
-
-**Create**
-
-- Fuel entries can be created while offline
-- Entries are stored locally immediately
-- Automatic sync to Firebase when connectivity is restored
-- No duplicates created during sync
-
-**Update**
-
-- Entries can be edited while offline
-- Updates persist locally with immediate UI feedback
-- `updatedAt` timestamp automatically updated
-- Changes sync to Firebase when online
-
-**Delete**
-
-- **Strategy**: Hard delete using Firestore `deleteDoc()`
-- Entries removed from local state immediately (optimistic)
-- Delete operations sync to Firebase when online
-- No resurrection of deleted entries after sync
-
-- Deterministic and prevents data corruption
+- ✅ **Predictive Insights** - Estimated range and cost predictions based on historical data
 
 ### Fuel Calculations
 
@@ -339,13 +280,79 @@ The calculations are integrated into the `fuelEntry` store as reactive, read-onl
 
 - **Reactive Updates**: Metrics automatically recompute whenever fuel entries are added, updated, or deleted.
 - **Read-Only**: Derived metrics are computed on-the-fly and cannot be directly modified.
-- **Non-Persistent**: Metrics are never stored in Firestore; only the raw fuel entries are persisted. This ensures the single source of truth remains the raw data while calculations stay deterministic.
+- **Non-Persistent**: Metrics are never stored in Firestore; only the raw fuel entries are persisted.
 - **Offline Functional**: Calculations work entirely in-memory, providing immediate feedback even without an internet connection.
 - **Sync Reconciliation**: Metrics remain stable during background synchronization as the store reconciles local changes with server data.
 
-### Upcoming Features
+### Charts & Visualizations
 
-_Future features will be added here following test-driven development_
+The application provides visual insights into fuel consumption using derived metrics:
+
+- **Efficiency Trend Chart**: A line chart showing fuel efficiency for each fill-up over time.
+- **Average Efficiency Metric**: A single-value display of the overall average fuel efficiency.
+- **Average Cost per Distance**: A single-value display of the average cost spent per unit of distance.
+
+#### Implementation & Offline Safety
+
+- **Data Driven**: Charts are purely driven by read-only derived metrics from the store.
+- **No Side Effects**: Rendering charts does not trigger any persistence, network calls, or calculations.
+- **Offline Safe**: Works entirely offline using locally cached data.
+- **Reactive**: Charts automatically update whenever fuel entries are added, modified, or deleted.
+- **Error Resilient**: Displays clear placeholders when data is insufficient (less than 2 entries) for calculation.
+
+### Predictive Insights
+
+The application provides read-only estimates based on historical performance.
+
+#### Features
+
+- **Estimated Driving Range**: Predicts how far the vehicle can travel on a full tank based on average fuel efficiency.
+- **Estimated Full Tank Cost**: Predicts the total cost to fill the tank from empty, based on current average efficiency and fuel price trends.
+
+#### Assumptions & Constraints
+
+- **Tank Capacity**: All predictions currently assume a fixed tank capacity of **50 units** (Liters or Gallons).
+- **Historical Data**: Requires at least two fuel entries to establish an efficiency baseline.
+- **Estimate Only**: These values are deterministic calculations based on historical averages and may not reflect future real-world conditions perfectly.
+
+#### Implementation & Offline Safety
+
+- **Pure Logic**: Calculations are handled by a dedicated pure functions module (`src/domain/fuelPredictions.ts`).
+- **Read-Only**: Predictions are derived state in Pinia and are not persistent or writable.
+- **Offline Reliable**: Works entirely without an internet connection using locally available data.
+- **Non-Persistent**: Predicted values are never saved to Firestore; they are recomputed reactively whenever entry data changes.
+
+### Fuel Entry Domain Model
+
+The `FuelEntry` represents a single fuel fill-up.
+
+#### Validation Rules
+
+- Odometer, fuel amount, and price must be positive
+- Date cannot be in the future
+- Updates must also pass the same validation rules
+
+#### CRUD Operations
+
+**Create**
+
+- Fuel entries can be created while offline
+- Entries are stored locally immediately
+- Automatic sync to Firebase when connectivity is restored
+
+**Update**
+
+- Entries can be edited while offline
+- Updates persist locally with immediate UI feedback
+- `updatedAt` timestamp automatically updated
+- Changes sync to Firebase when online
+
+**Delete**
+
+- **Strategy**: Hard delete using Firestore `deleteDoc()`
+- Entries removed from local state immediately (optimistic)
+- Delete operations sync to Firebase when online
+- No resurrection of deleted entries after sync
 
 ## Development Guidelines
 
@@ -363,12 +370,6 @@ All new functionality **must**:
 - Avoid premature optimization
 - Add comments only where intent is not obvious
 - No placeholder or demo code without explanation
-
-### Non-Goals (Current Phase)
-
-❌ Fuel entry forms (not yet implemented)  
-❌ Charts and visualizations  
-❌ Predictions or analytics
 
 ## Recommended IDE Setup
 

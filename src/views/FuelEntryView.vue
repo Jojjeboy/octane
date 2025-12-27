@@ -143,6 +143,22 @@ const handleDelete = async (entryId: string) => {
           })"
         />
       </div>
+
+      <div class="predictions-section">
+        <h3>Predictive Estimates (50L Tank)</h3>
+        <div class="metrics-grid">
+          <AverageMetric
+            label="Estimated Range"
+            :value="fuelEntryStore.estimatedRange"
+            unit="km"
+          />
+          <AverageMetric
+            label="Est. Full Tank Cost"
+            :value="fuelEntryStore.estimatedFullTankCost"
+            unit="$"
+          />
+        </div>
+      </div>
     </section>
 
     <!-- Add/Edit Entry Form -->
@@ -362,10 +378,17 @@ const handleDelete = async (entryId: string) => {
   margin-top: 20px;
 }
 
-.chart-section h3 {
+.chart-section h3,
+.predictions-section h3 {
   margin-bottom: 10px;
   font-size: 1rem;
   color: #666;
+}
+
+.predictions-section {
+  margin-top: 30px;
+  border-top: 1px dashed #ddd;
+  padding-top: 20px;
 }
 
 .btn-edit, .btn-delete {

@@ -17,6 +17,10 @@ import {
   calculatePerEntryEfficiency,
   calculateAverageCostPerDistance
 } from '@/domain/fuelCalculations'
+import {
+  estimateRange,
+  estimateFullTankCost
+} from '@/domain/fuelPredictions'
 
 export interface FuelEntry {
   id: string
@@ -122,6 +126,31 @@ export const useFuelEntryStore = defineStore('fuelEntry', () => {
       return calculateAverageCostPerDistance(chronologicalEntries.value)
     } catch (err: any) {
       console.error('Cost calculation error:', err.message)
+      return null
+    }
+  })
+
+  // Predictions (Read-only estimates)
+  const TANK_CAPACITY = 50 // Liters/Gallons - configurable in code
+
+  const estimatedRange = computed(() => {
+    try {
+      return estimateRange(averageEfficiency.value, TANK_CAPACITY)
+    } catch (err: any) {
+      console.error('Range estimation error:', err.message)
+      return null
+    }
+  })
+
+  const estimatedFullTankCost = computed(() => {
+    try {
+      return estimateFullTankCost(
+        averageCostPerDistance.value,
+        averageEfficiency.value,
+        TANK_CAPACITY
+      )
+    } catch (err: any) {
+      console.error('Cost estimation error:', err.message)
       return null
     }
   })
@@ -287,6 +316,9 @@ export const useFuelEntryStore = defineStore('fuelEntry', () => {
     // Metrics
     averageEfficiency,
     perEntryEfficiency,
-    averageCostPerDistance
+    averageCostPerDistance,
+    // Predictions
+    estimatedRange,
+    estimatedFullTankCost
   }
 })
